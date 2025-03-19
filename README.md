@@ -74,11 +74,11 @@ python scripts/generar_inmersion_realista.py
 ```
 3️⃣ **Se consulta el historial de inmersiones**
 ```bash
-curl -X GET http://localhost:5000/historial
+curl -X GET http://localhost:5001/historial
 ```
 4️⃣ **Se evalúa la seguridad de una inmersión**
 ```bash
-curl -X GET http://localhost:5000/finalizar_inmersion/TEST123
+curl -X GET http://localhost:5001/finalizar_inmersion/TEST123
 ```
 
 ## 📊 Datos Recopilados
