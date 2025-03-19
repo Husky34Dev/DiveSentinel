@@ -107,4 +107,4 @@ Cada inmersión genera datos en tiempo real con los siguientes parámetros:
 ---
 
 👨‍💻 **Desarrollado por:** Bernardo Martínez Romero  
-🌐 **Repositorio en GitHub:** [[Enlace a tu repo](https://github.com/Husky34Dev/SCUBAML)]
+🌐 **Repositorio en GitHub:** [[Enlace](https://github.com/Husky34Dev/SCUBAML)]
