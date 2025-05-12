@@ -1,86 +1,72 @@
+import os
 import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split, RandomizedSearchCV
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.model_selection import train_test_split, RandomizedSearchCV, StratifiedKFold
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.metrics import classification_report, accuracy_score, roc_auc_score
 import joblib
 
-# Cargar dataset
-DATASET_PATH = "data/dataset_inmersiones.csv"
-df = pd.read_csv(DATASET_PATH)
+# 1) Carga de datos
+data_path = 'data/features_dataset.csv'
+df = pd.read_csv(data_path)
 
-# 🚨 Agregar datos sintéticos de inmersiones extremas para que el modelo aprenda
-extra_data = pd.DataFrame([
-    {"Profundidad_maxima_m": 120, "Tiempo_fondo_min": 80, "Temperatura_agua_C": 5, "Consumo_aire_bar": 180,
-     "Ritmo_cardiaco_bpm": 150, "Nivel_experiencia": "Avanzado", "Condiciones_mar": "Moderado", "Tipo_gas": "Trimix",
-     "Paradas_seguridad": "No", "Ascenso_controlado": "No", "Inmersion_segura": "No"},
-    {"Profundidad_maxima_m": 200, "Tiempo_fondo_min": 90, "Temperatura_agua_C": 2, "Consumo_aire_bar": 200,
-     "Ritmo_cardiaco_bpm": 160, "Nivel_experiencia": "Avanzado", "Condiciones_mar": "Agitado", "Tipo_gas": "Trimix",
-     "Paradas_seguridad": "No", "Ascenso_controlado": "No", "Inmersion_segura": "No"},
-])
-df = pd.concat([df, extra_data], ignore_index=True)
+# 2) Variables
+numerical_feats = ['temperatura_agua_celsius', 'volumen_tanque_l', 'profundidad_maxima']
+categorical_feats = ['nivel_experiencia', 'condiciones_mar', 'tipo_gas_usado']
 
-# Mapeo de valores categóricos
-def preprocess_data(df):
-    """ Preprocesa el dataset convirtiendo variables categóricas en numéricas. """
-    mapping_experiencia = {"Principiante": 0, "Intermedio": 1, "Avanzado": 2}
-    mapping_gas = {"Aire": 0, "Nitrox": 1, "Trimix": 2}
-    mapping_si_no = {"Sí": 1, "No": 0}
-    mapping_mar = {"Calmado": 0, "Moderado": 1, "Agitado": 2}
+X = df[numerical_feats + categorical_feats]
+y = df['label_segura']
 
-    df["Nivel_experiencia"] = df["Nivel_experiencia"].map(mapping_experiencia)
-    df["Tipo_gas"] = df["Tipo_gas"].map(mapping_gas)
-    df["Paradas_seguridad"] = df["Paradas_seguridad"].map(mapping_si_no)
-    df["Ascenso_controlado"] = df["Ascenso_controlado"].map(mapping_si_no)
-    df["Inmersion_segura"] = df["Inmersion_segura"].map(mapping_si_no)
-    df["Condiciones_mar"] = df["Condiciones_mar"].map(mapping_mar)
-
-    return df
-
-# Preprocesar datos
-df = preprocess_data(df)
-
-# Separar características (X) y etiqueta de clasificación (y)
-X = df.drop(columns=["Inmersion_segura", "ID_inmersion"], errors="ignore")
-
-# Aumentar peso de la experiencia en el modelo
-X["Nivel_experiencia_peso"] = X["Nivel_experiencia"] * 2  
-
-# Penalización de seguridad para principiantes en inmersiones peligrosas
-df["Penalizacion_seguridad"] = df.apply(
-    lambda row: 3 if row["Nivel_experiencia"] == 0 and row["Inmersion_segura"] == 0 else 1, axis=1
+# 3) División estratificada
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
 )
 
-# Aplicar la penalización en la clasificación
-y = df["Inmersion_segura"] * df["Penalizacion_seguridad"]
+# 4) Preprocesado
+preprocessor = ColumnTransformer([
+    ('num', StandardScaler(), numerical_feats),
+    ('cat', OneHotEncoder(handle_unknown='ignore', sparse_output=False), categorical_feats)
+], remainder='drop')
 
-# Dividir en conjunto de entrenamiento y prueba
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# 5) Pipeline de entrenamiento
+model = HistGradientBoostingClassifier(random_state=42)
+pipeline = Pipeline([
+    ('prep', preprocessor),
+    ('clf', model)
+])
 
-# 🚀 Optimización de hiperparámetros con RandomizedSearchCV
-param_grid = {
-    'n_estimators': [50, 100, 200],
-    'max_depth': [10, 20, 30, None],
-    'min_samples_split': [2, 5, 10],
-    'min_samples_leaf': [1, 2, 4],
-    'bootstrap': [True, False]
+# 6) Búsqueda de hiperparámetros
+param_dist = {
+    'clf__learning_rate': [0.01, 0.05, 0.1],
+    'clf__max_iter': [100, 200],
+    'clf__max_depth': [None, 5, 10],
+    'clf__min_samples_leaf': [20, 50],
+    'clf__l2_regularization': [0.0, 0.1]
 }
 
-rf = RandomForestClassifier(random_state=42)
-grid_search = RandomizedSearchCV(estimator=rf, param_distributions=param_grid, 
-                                 n_iter=10, cv=5, verbose=2, n_jobs=-1)
-grid_search.fit(X_train, y_train)
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+search = RandomizedSearchCV(
+    pipeline, param_dist, n_iter=10, cv=cv,
+    scoring='roc_auc', n_jobs=-1, random_state=42, verbose=1
+)
 
-# Mejor modelo optimizado
-best_rf = grid_search.best_estimator_
+# 7) Entrenamiento
+search.fit(X_train, y_train)
+print("✔️ Mejores parámetros:", search.best_params_)
 
-# Evaluar modelo
-y_pred = best_rf.predict(X_test)
-accuracy = accuracy_score(y_test, y_pred)
-print(f"Precisión del modelo después de optimización: {accuracy:.2f}")
+# 8) Evaluación
+best = search.best_estimator_
+y_pred = best.predict(X_test)
+y_proba = best.predict_proba(X_test)[:, 1]
+
+print(f"📊 Accuracy: {accuracy_score(y_test, y_pred):.3f}")
+print(f"📈 ROC AUC: {roc_auc_score(y_test, y_proba):.3f}")
 print(classification_report(y_test, y_pred))
 
-# Guardar el modelo optimizado
-MODEL_PATH = "src/models/model_rf.pkl"
-joblib.dump(best_rf, MODEL_PATH)
-print(f"Modelo optimizado guardado en {MODEL_PATH}")
+# 9) Guardado
+os.makedirs('src/models', exist_ok=True)
+model_path = os.getenv('MODEL_PATH', 'src/models/pipeline_gbc.joblib')
+joblib.dump(best, model_path)
+print(f"💾 Modelo guardado en {model_path}")

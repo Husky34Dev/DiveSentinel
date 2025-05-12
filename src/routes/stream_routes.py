@@ -10,7 +10,7 @@ def initialize_stream_routes(app):
         Recibe datos en tiempo real durante la inmersión y los almacena en MongoDB.
         """
         datos = request.json
-        datos["timestamp"] = datetime.datetime.utcnow()  # Añadir marca de tiempo
+        datos["timestamp"] = datetime.datetime.utcnow()  
 
         insertar_dato_inmersion(datos)
 

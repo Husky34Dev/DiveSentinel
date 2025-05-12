@@ -1,12 +1,17 @@
+import os, sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from flask import Flask
 from flask_cors import CORS
-from routes.routes import initialize_routes
-from routes.stream_routes import initialize_stream_routes
+
+from src.routes.routes import initialize_routes
+from src.routes.stream_routes import initialize_stream_routes
 
 app = Flask(__name__)
-CORS(app)  # Permitir CORS para comunicación con frontend
+CORS(app)
 
-# Inicializamos las rutas
+# 3) Registramos las rutas
 initialize_routes(app)
 initialize_stream_routes(app)
 
