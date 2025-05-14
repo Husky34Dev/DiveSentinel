@@ -12,16 +12,17 @@ El sistema está compuesto por:
 
 ## 📂 Estructura del Proyecto
 
+```
 DiveSentinel/
-│── data/
+├── data/
 │   ├── features_dataset.csv
 │   └── raw_data.csv
 │
-│── scripts/
+├── scripts/
 │   ├── generar_dataset.py
 │   └── generar_datos_stream.py
 │
-│── src/
+├── src/
 │   ├── controllers/
 │   ├── models/
 │   │   ├── model_rf.pkl
@@ -45,69 +46,71 @@ DiveSentinel/
 │   ├── app.py
 │   └── config.py
 │
-│── requirements.txt
-│── setup.py
-│── README.md
-│── tests/
-
+├── requirements.txt
+├── setup.py
+├── README.md
+└── tests/
+```
 
 ## 🚀 Instalación y Configuración
 
 ### 1️⃣ Clonar el repositorio
-\`\`\`bash
+```bash
 git clone https://github.com/Husky34Dev/DiveSentinel.git
 cd DiveSentinel
-\`\`\`
+```
 
 ### 2️⃣ Crear entorno virtual e instalar dependencias
-\`\`\`bash
+```bash
 python -m venv .venv
-source .venv/bin/activate      # macOS/Linux
-.venv\Scripts\activate         # Windows
+# macOS/Linux
+source .venv/bin/activate
+
+# Windows
+.venv\Scripts\activate
 
 pip install -r requirements.txt
-\`\`\`
+```
 
 ### 3️⃣ Configurar MongoDB
-
-Asegúrate de tener MongoDB ejecutándose localmente. Por defecto, DiveSentinel usa la URI mongodb://localhost:27017 y accede a la base de datos scubaML.
+Asegúrate de tener MongoDB ejecutándose localmente. Por defecto, DiveSentinel usa la URI `mongodb://localhost:27017` y accede a la base de datos `scubaML`.
 
 Puedes crear la colección manualmente desde la shell de Mongo:
 
-\`\`\`bash
+```bash
 mongosh
 use scubaML
 db.createCollection("stream_inmersiones")
-\`\`\`
+```
 
 ---
 
-### 🌊 Flujo de Trabajo
+## 🌊 Flujo de Trabajo
 
-1. **Iniciar la API Flask**
-\`\`\`bash
-python src/app.py
-\`\`\`
+1. **Iniciar la API Flask**  
+   ```bash
+   python src/app.py
+   ```
 
-2. **Simular una inmersión**
-\`\`\`bash
-python scripts/generar_datos_stream.py
-\`\`\`
+2. **Simular una inmersión**  
+   ```bash
+   python scripts/generar_datos_stream.py
+   ```
 
-3. **Extraer y procesar datos desde MongoDB**
-\`\`\`bash
-python scripts/generar_dataset.py
-\`\`\`
+3. **Extraer y procesar datos desde MongoDB**  
+   ```bash
+   python scripts/generar_dataset.py
+   ```
 
-4. **Entrenar el modelo**
-\`\`\`bash
-python src/models/model_trainer.py
-\`\`\`
+4. **Entrenar el modelo**  
+   ```bash
+   python src/models/model_trainer.py
+   ```
 
-5. **Predecir la seguridad de una inmersión existente**
-\`\`\`bash
-curl -X GET http://localhost:5000/predict/inmersion_SIM_001
-\`\`\`
+5. **Predecir la seguridad de una inmersión existente**  
+   ```bash
+   curl -X GET http://localhost:5000/predict/inmersion_SIM_001
+   ```
 
 ---
 
@@ -122,16 +125,16 @@ Durante cada inmersión se registran:
 - Tipo de gas utilizado
 - Temperatura del agua
 - Nivel de experiencia del buceador
-- Resultado final: ¿Fue segura la inmersión?
+- Resultado final: **Segura (1) / No segura (0)**
 
 ---
 
 ## 🧠 Machine Learning
 
 - **Modelo**: HistGradientBoostingClassifier (scikit-learn)  
-- **Entrenado con**: features_dataset.csv generado desde datos simulados  
+- **Entrenado con**: `features_dataset.csv` generado desde datos simulados  
 - **Optimización automática**: RandomizedSearchCV  
-- **Output binario**: Segura (1) / No segura (0)
+- **Output**: Binario (Segura / No segura)
 
 ---
 
