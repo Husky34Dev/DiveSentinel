@@ -45,5 +45,5 @@ def predecir_seguridad_desde_mongo(inmersion_id: str) -> str:
 
 # Ejemplo de uso
 if __name__ == "__main__":
-    print(predecir_seguridad_desde_mongo("SIM_201")) 
+    print(predecir_seguridad_desde_mongo("SIM_403")) 
 

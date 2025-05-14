@@ -1,110 +1,148 @@
-# ScubaML - Análisis de Seguridad en Inmersiones de Buceo con Machine Learning
+# DiveSentinel - Seguridad Inteligente para Inmersiones de Buceo
 
-## 📌 Descripción del Proyecto
-ScubaML es una aplicación basada en Machine Learning y procesamiento de datos en tiempo real para evaluar la seguridad de inmersiones de buceo. Utiliza un flujo de datos en vivo que registra métricas críticas durante la inmersión y posteriormente genera un análisis automatizado sobre la seguridad de la inmersión.
+## 📌 Descripción del Proyecto  
+DiveSentinel es un sistema de análisis inteligente que utiliza Machine Learning para evaluar si una inmersión de buceo ha sido segura o no. Ante la falta de datasets reales, se desarrolló un simulador completo que genera inmersiones sintéticas basadas en modelos reales de buceo técnico como el algoritmo de Bühlmann, consumo de gases, paradas de descompresión y más.
 
-## 🏗️ Arquitectura del Proyecto
+## 🏗️ Arquitectura del Proyecto  
 El sistema está compuesto por:
-- **Flask API**: Para recibir y procesar datos en tiempo real.
-- **MongoDB**: Para almacenar las inmersiones y sus eventos.
-- **Machine Learning**: Un modelo de clasificación entrenado con Random Forest para evaluar la seguridad de la inmersión.
-- **Streaming de Datos**: Un sistema que simula y envía datos de una inmersión realista en tiempo real.
+- **Flask API**: Recibe solicitudes y ofrece predicciones sobre la seguridad de una inmersión.
+- **MongoDB**: Almacena los datos crudos minuto a minuto de cada inmersión.
+- **Machine Learning (HistGradientBoostingClassifier)**: Modelo entrenado con inmersiones simuladas.
+- **Scripts de simulación y extracción**: Generan los datos y preparan el dataset para el entrenamiento.
 
 ## 📂 Estructura del Proyecto
-```
-scubaML/
-│── src/
-│   ├── app.py  # Archivo principal para ejecutar la API Flask
-│   ├── routes/
-│   │   ├── routes.py  # Endpoints principales
-│   │   ├── stream_routes.py  # Manejo de datos en tiempo real
-│   ├── services/
-│   │   ├── db_service.py  # Conexión con MongoDB
-│   │   ├── evaluation_service.py  # Reglas de evaluación de seguridad
-│   │   ├── inmersion_analysis.py  # Análisis de los datos de la inmersión
-│   ├── models/
-│   │   ├── model_trainer.py  # Entrenamiento del modelo ML
-│   │   ├── predict.py  # Predicción con el modelo entrenado
-│── scripts/
-│   ├── generar_inmersion_realista.py  # Script para simular inmersiones en tiempo real
+
+DiveSentinel/
 │── data/
-│   ├── dataset_inmersiones.csv  # Dataset de entrenamiento
-│── README.md  # Documentación del proyecto
-│── requirements.txt  # Dependencias del proyecto
-```
+│   ├── features_dataset.csv
+│   └── raw_data.csv
+│
+│── scripts/
+│   ├── generar_dataset.py
+│   └── generar_datos_stream.py
+│
+│── src/
+│   ├── controllers/
+│   ├── models/
+│   │   ├── model_rf.pkl
+│   │   ├── model_trainer.py
+│   │   ├── pipeline_gbc.joblib
+│   │   └── predict.py
+│   ├── routes/
+│   │   ├── init.py
+│   │   ├── routes.py
+│   │   └── stream_routes.py
+│   ├── services/
+│   │   ├── init.py
+│   │   ├── api_client.py
+│   │   └── db_service.py
+│   ├── simulator/
+│   │   ├── init.py
+│   │   └── simulator.py
+│   ├── utils/
+│   │   ├── init.py
+│   │   └── simulation_utils.py
+│   ├── app.py
+│   └── config.py
+│
+│── requirements.txt
+│── setup.py
+│── README.md
+│── tests/
+
 
 ## 🚀 Instalación y Configuración
-### **1️⃣ Clonar el repositorio**
-```bash
-git clone https://github.com/tu_usuario/scubaML.git
-cd scubaML
-```
-### **2️⃣ Crear un entorno virtual**
-```bash
+
+### 1️⃣ Clonar el repositorio
+\`\`\`bash
+git clone https://github.com/Husky34Dev/DiveSentinel.git
+cd DiveSentinel
+\`\`\`
+
+### 2️⃣ Crear entorno virtual e instalar dependencias
+\`\`\`bash
 python -m venv .venv
-source .venv/bin/activate  # macOS/Linux
-.venv\Scripts\activate  # Windows
-```
-### **3️⃣ Instalar dependencias**
-```bash
+source .venv/bin/activate      # macOS/Linux
+.venv\Scripts\activate         # Windows
+
 pip install -r requirements.txt
-```
-### **4️⃣ Configurar MongoDB**
-Asegúrate de que MongoDB está corriendo:
-```bash
-mongod --dbpath "C:\data\db"  # Windows
-sudo systemctl start mongod  # Linux
-```
-Crear la base de datos y las colecciones necesarias:
-```bash
+\`\`\`
+
+### 3️⃣ Configurar MongoDB
+
+Asegúrate de tener MongoDB ejecutándose localmente. Por defecto, DiveSentinel usa la URI mongodb://localhost:27017 y accede a la base de datos scubaML.
+
+Puedes crear la colección manualmente desde la shell de Mongo:
+
+\`\`\`bash
 mongosh
 use scubaML
 db.createCollection("stream_inmersiones")
-db.createCollection("historial_inmersiones")
-```
-
-## 🌊 Flujo de Trabajo
-1️⃣ **Se inicia la API Flask**
-```bash
-python src/app.py
-```
-2️⃣ **Se simula una inmersión con datos en tiempo real**
-```bash
-python scripts/generar_inmersion_realista.py
-```
-3️⃣ **Se consulta el historial de inmersiones**
-```bash
-curl -X GET http://localhost:5001/historial
-```
-4️⃣ **Se evalúa la seguridad de una inmersión**
-```bash
-curl -X GET http://localhost:5001/finalizar_inmersion/TEST123
-```
-
-## 📊 Datos Recopilados
-Cada inmersión genera datos en tiempo real con los siguientes parámetros:
-- **Profundidad máxima (m)**
-- **Tiempo transcurrido (min)**
-- **Temperatura del agua (°C)**
-- **Consumo de aire (bar)**
-- **Ritmo cardíaco (bpm)**
-- **Nivel de experiencia del buceador**
-- **Condiciones del mar**
-- **Tipo de gas respirado (Aire, Nitrox, Trimix)**
-- **Paradas de seguridad realizadas**
-- **Ascenso controlado o no**
-
-## 🧠 Machine Learning
-- Se utiliza **Random Forest** para clasificar una inmersión como **Segura o No Segura**.
-- Se entrenó con un dataset generado sintéticamente basado en reglas de buceo.
-- Se optimizó con **RandomizedSearchCV** para ajustar hiperparámetros.
-
-## 📌 Próximos Pasos
-✅ Mejorar el modelo ML con más datos reales.
-✅ Agregar una interfaz gráfica para visualizar las inmersiones.
-✅ Implementar alertas en tiempo real para prevenir inmersiones peligrosas.
+\`\`\`
 
 ---
 
-👨‍💻 **Desarrollado por:** Bernardo Martínez Romero  
-🌐 **Repositorio en GitHub:** [[Enlace](https://github.com/Husky34Dev/SCUBAML)]
+### 🌊 Flujo de Trabajo
+
+1. **Iniciar la API Flask**
+\`\`\`bash
+python src/app.py
+\`\`\`
+
+2. **Simular una inmersión**
+\`\`\`bash
+python scripts/generar_datos_stream.py
+\`\`\`
+
+3. **Extraer y procesar datos desde MongoDB**
+\`\`\`bash
+python scripts/generar_dataset.py
+\`\`\`
+
+4. **Entrenar el modelo**
+\`\`\`bash
+python src/models/model_trainer.py
+\`\`\`
+
+5. **Predecir la seguridad de una inmersión existente**
+\`\`\`bash
+curl -X GET http://localhost:5000/predict/inmersion_SIM_001
+\`\`\`
+
+---
+
+## 📊 Variables Recolectadas
+
+Durante cada inmersión se registran:
+- Profundidad máxima y media
+- Tiempo total
+- Consumo mínimo de aire
+- Número de paradas de seguridad y descompresión
+- Condiciones del mar
+- Tipo de gas utilizado
+- Temperatura del agua
+- Nivel de experiencia del buceador
+- Resultado final: ¿Fue segura la inmersión?
+
+---
+
+## 🧠 Machine Learning
+
+- **Modelo**: HistGradientBoostingClassifier (scikit-learn)  
+- **Entrenado con**: features_dataset.csv generado desde datos simulados  
+- **Optimización automática**: RandomizedSearchCV  
+- **Output binario**: Segura (1) / No segura (0)
+
+---
+
+## 🧩 Próximos Pasos
+
+- Incluir datos reales en el entrenamiento  
+- Desplegar el sistema como plataforma web (SaaS)  
+- Crear interfaz visual para instructores y centros de buceo  
+- Añadir notificaciones y alertas automáticas
+
+---
+
+👨‍💻 **Desarrollado por**: Bernardo Martínez Romero  
+🔗 **Repositorio GitHub**: https://github.com/Husky34Dev/DiveSentinel
